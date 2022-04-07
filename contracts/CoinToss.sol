@@ -90,10 +90,9 @@ contract CoinToss is VRFConsumerBase {
 
         result = uint8(_randomness % 2);
 
-        // if (result == guess_value) {
-        //     pool.payWinner(current_player, prize);
-        // }
-        pool.payWinner(current_player, prize);
+        if (result == guess_value) {
+            pool.payWinner(current_player, prize);
+        }
 
         bid = 0;
         prize = 0;
