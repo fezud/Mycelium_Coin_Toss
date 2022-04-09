@@ -20,4 +20,6 @@ compiler:
       remappings:
         - '@chainlink=smartcontractkit/chainlink-brownie-contracts@0.4.0'
 wallets:
-  from_key: ${PRIVATE_KEY}
+  from_key: 
+    0: ${PRIVATE_KEY_0}
+    1: ${PRIVATE_KEY_1}

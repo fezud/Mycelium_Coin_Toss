@@ -1,4 +1,4 @@
-from brownie import accounts, config, network, Contract, VRFCoordinatorMock, LinkToken, interface
+from brownie import accounts, config, network, Contract, VRFCoordinatorMock, LinkToken, interface, Wei
 
 
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["development", "ganache-local"]
@@ -11,7 +11,7 @@ def get_account(index=None, id=None):
         return accounts.load(id)
     if network.show_active() in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
         return accounts[0]
-    return accounts.add(config["wallets"]["from_key"])
+    return accounts.add(config["wallets"]["from_key"][0])
 
 
 contract_to_mock = {
@@ -42,7 +42,7 @@ def deploy_mocks():
     print("Mocks are deployed\n")
 
 
-def fund_with_link(contract_address, account=None, link_token=None, amount=100000000000000000):
+def fund_with_link(contract_address, account=None, link_token=None, amount=Wei('1 ether')):
     account = account if account else get_account()
     # link_token = interface.LinkTokenInterface(link_token.address)
     link_token = link_token if link_token else get_contract("link_token")

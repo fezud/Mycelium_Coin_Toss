@@ -1,7 +1,7 @@
 from json import load
 from dotenv import load_dotenv
-from brownie import Wei, config, network, CoinToss, Pool
-from .helpful_scripts import get_account, get_contract, fund_with_link
+from brownie import Wei, accounts, config, network, CoinToss, Pool
+from .helpful_scripts import get_account, get_contract, fund_with_link, LOCAL_BLOCKCHAIN_ENVIRONMENTS
 from time import sleep
 
 load_dotenv()
@@ -29,10 +29,12 @@ def deploy_pool():
 
 
 def fund_pool():
-    account = get_account(index=1)
+    account = get_account()
     coin_toss = CoinToss[-1]
     pool = Pool[-1]
-    tx = account.transfer(pool.address, Wei('10 ether'))
+    pool_balance = Wei("10 ether") if network.show_active(
+    ) in LOCAL_BLOCKCHAIN_ENVIRONMENTS else Wei('0.01 ether')
+    tx = account.transfer(pool.address, pool_balance)
     tx.wait(1)
     print("funded pool\n")
     print(f'coin_toss balance: {coin_toss.balance()}\n')
@@ -40,9 +42,9 @@ def fund_pool():
 
 
 def fund_coin_toss_with_link():
-    account = get_account(index=1)
+    account = get_account()
     coin_toss = CoinToss[-1]
-    tx = fund_with_link(coin_toss.address, amount=Wei("1 ether"))
+    tx = fund_with_link(coin_toss.address, amount=Wei("0.1 ether"))
     tx.wait(1)
     print("funded coin_toss with link\n")
     print(f'coin_toss balance: {coin_toss.balance()}\n')
@@ -59,22 +61,30 @@ def set_pool():
     print(f'pool balance: {pool.balance()}\n')
 
 
-def flip(index=2, guess_value=1):
-    account = get_account(index=index)
+def flip(index=0, guess_value=0):
+    if network.show_active() in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
+        account = get_account(index=index)
+    else:
+        account = accounts.add(config["wallets"]["from_key"][index])
     coin_toss = CoinToss[-1]
     pool = Pool[-1]
+    bid = Wei("0.1 ether") if network.show_active(
+    ) in LOCAL_BLOCKCHAIN_ENVIRONMENTS else Wei('0.0001 ether')
     tx = coin_toss.flip(
-        guess_value, {"from": account, "value": Wei('0.1 ether')})
+        guess_value, {"from": account, "value": bid})
     tx.wait(1)
 
-    # ONLY for purposes of development network deploying
-    request_id = tx.events["RequestedRandomness"]["requestId"]
-    STATIC_RNG = 789
-    account_to_mock_chainlink_node = get_account()
-    vrf_coordinator = get_contract("vrf_coordinator")
-    vrf_coordinator.callBackWithRandomness(
-        request_id, STATIC_RNG, coin_toss.address, {"from": account_to_mock_chainlink_node})
-    # code below is universal
+    if network.show_active() in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
+        print(f"network is {network.show_active()}\n")
+        request_id = tx.events["RequestedRandomness"]["requestId"]
+        STATIC_RNG = 789
+        account_to_mock_chainlink_node = get_account()
+        vrf_coordinator = get_contract("vrf_coordinator")
+        vrf_coordinator.callBackWithRandomness(
+            request_id, STATIC_RNG, coin_toss.address, {"from": account_to_mock_chainlink_node})
+
+    print(f"Result {coin_toss.result()} // guess \
+     {guess_value}")
 
     print("coin was flipped\n")
     print(f'coin_toss balance: {coin_toss.balance()}\n')
@@ -90,7 +100,4 @@ def main():
 
     set_pool()
 
-    flip()
-    flip(index=2, guess_value=1)
-    flip(index=3, guess_value=1)
-    flip(index=4)
+    flip(index=1, guess_value=0)

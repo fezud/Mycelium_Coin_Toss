@@ -76,6 +76,8 @@ contract CoinToss is VRFConsumerBase {
         require(sent, "Transaction was not successfull");
         
 
+        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
+
         bytes32 requestId = requestRandomness(keyhash, fee);
         emit RequestedRandomness(requestId);
     }
