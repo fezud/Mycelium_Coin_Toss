@@ -65,15 +65,19 @@ contract CoinToss is VRFConsumerBase {
 
         require(msg.value <= maximumBid(), "Your bid is too big");
         bid = msg.value;
+
+        require(address(this).balance == bid, "Balance of contract is not equal to the bid");
+
         prize = bid * 2;
 
         state = STATE.CLOSED;
         current_player = payable(msg.sender);
 
-        (bool sent, bytes memory data) = payable(address(pool)).call{value: bid}(
+        (bool sent, bytes memory data) = payable(address(pool)).call{value: address(this).balance}(
             ""
         );
         require(sent, "Transaction was not successfull");
+        require(address(this).balance == 0, "Not all ETH transferred to the pool");
         
 
         require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
