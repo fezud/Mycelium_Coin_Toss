@@ -111,4 +111,4 @@ def main():
 
     set_pool()
 
-    flip(index=1, guess_value=0)
+    # flip(index=1, guess_value=0)

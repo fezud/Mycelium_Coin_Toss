@@ -25,6 +25,7 @@ contract CoinToss is VRFConsumerBase {
     STATE public state;
 
     event RequestedRandomness(bytes32 requestId);
+    event Result(uint8 guess_value, uint8 result, uint256 bid, address player, uint256 timestamp);
 
     constructor(
         address _vrfCoordinator,
@@ -96,9 +97,12 @@ contract CoinToss is VRFConsumerBase {
 
         result = uint8(_randomness % 2);
 
+
         if (result == guess_value) {
             pool.payWinner(current_player, prize);
         }
+
+        emit Result(result, guess_value, bid, current_player, block.timestamp);
 
         bid = 0;
         prize = 0;
