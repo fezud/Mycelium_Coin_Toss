@@ -15,6 +15,7 @@ contract CoinToss is VRFConsumerBase {
     uint256 bid;
     uint256 prize;
     bool pool_is_set = false;
+    bool private stopped = false;
 
     enum STATE {
         DEPLOYED,
@@ -48,6 +49,12 @@ contract CoinToss is VRFConsumerBase {
         _;
     }
 
+    modifier stopInEmergency { if (!stopped) _; }
+
+    function toggleContractActive() public onlyOwner {
+        stopped = !stopped;
+    }
+
     function setPool(address payable _pool) public onlyOwner {
         pool = Pool(_pool);
         state = STATE.OPEN;
@@ -58,7 +65,7 @@ contract CoinToss is VRFConsumerBase {
         return address(pool).balance / 50;
     }
 
-    function flip(uint8 _guess_value) external payable {
+    function flip(uint8 _guess_value) external payable stopInEmergency {
         require(state == STATE.OPEN);
         require(current_player == address(0));
 
