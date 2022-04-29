@@ -28,6 +28,7 @@ contract CoinToss is VRFConsumerBase {
     event CalculatedResult(uint8 result);
     event Won(address winner, uint256 prize);
     event Result(uint8 guess_value, uint8 result, uint256 bid, address player, uint256 timestamp);
+    event SetPool(address pool);
 
     constructor(
         address _vrfCoordinator,
@@ -50,6 +51,7 @@ contract CoinToss is VRFConsumerBase {
     function setPool(address payable _pool) public onlyOwner {
         pool = Pool(_pool);
         state = STATE.OPEN;
+        emit SetPool(_pool);
     }
 
     function maximumBid() internal view returns (uint256) {
@@ -68,6 +70,7 @@ contract CoinToss is VRFConsumerBase {
 
         require(msg.value <= maximumBid(), "Your bid is too big");
         bid = msg.value;
+
         prize = bid * 2;
 
         state = STATE.CLOSED;
@@ -75,6 +78,8 @@ contract CoinToss is VRFConsumerBase {
 
         payable(address(pool)).transfer(bid);
         
+        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
+
         bytes32 requestId = requestRandomness(keyhash, fee);
         emit RequestedRandomness(requestId);
     }
