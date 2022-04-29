@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.0;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./Pool.sol";
@@ -25,6 +25,8 @@ contract CoinToss is VRFConsumerBase {
     STATE public state;
 
     event RequestedRandomness(bytes32 requestId);
+    event CalculatedResult(uint8 result);
+    event Won(address winner, uint256 prize);
     event Result(uint8 guess_value, uint8 result, uint256 bid, address player, uint256 timestamp);
 
     constructor(
@@ -50,7 +52,7 @@ contract CoinToss is VRFConsumerBase {
         state = STATE.OPEN;
     }
 
-    function maximumBid() internal returns (uint256) {
+    function maximumBid() internal view returns (uint256) {
         return address(pool).balance / 50;
     }
 
@@ -66,23 +68,13 @@ contract CoinToss is VRFConsumerBase {
 
         require(msg.value <= maximumBid(), "Your bid is too big");
         bid = msg.value;
-
-        require(address(this).balance == bid, "Balance of contract is not equal to the bid");
-
         prize = bid * 2;
 
         state = STATE.CLOSED;
         current_player = payable(msg.sender);
 
-        (bool sent, bytes memory data) = payable(address(pool)).call{value: address(this).balance}(
-            ""
-        );
-        require(sent, "Transaction was not successfull");
-        require(address(this).balance == 0, "Not all ETH transferred to the pool");
+        payable(address(pool)).transfer(bid);
         
-
-        require(LINK.balanceOf(address(this)) >= fee, "Not enough LINK");
-
         bytes32 requestId = requestRandomness(keyhash, fee);
         emit RequestedRandomness(requestId);
     }
@@ -96,17 +88,25 @@ contract CoinToss is VRFConsumerBase {
         require(_randomness > 0);
 
         result = uint8(_randomness % 2);
-
-
-        if (result == guess_value) {
-            pool.payWinner(current_player, prize);
-        }
-
         emit Result(result, guess_value, bid, current_player, block.timestamp);
+    }
+
+    function receivePrize() external {
+
+        require(state == STATE.CLOSED);
+        require(current_player == msg.sender, "You haven't played");
+        require(result == guess_value, "You've lost");
+
+        address payable _current_player = current_player;
+        uint256 _prize = prize;
 
         bid = 0;
         prize = 0;
         current_player = payable(address(0));
         state = STATE.OPEN;
+
+
+        emit Won(_current_player, _prize);
+        pool.payWinner(_current_player, _prize);
     }
 }

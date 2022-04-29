@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.0;
 
 contract Pool {
     address coin_toss;
     event Received(address, uint256);
+    event Paid(address, uint256);
 
     constructor(address _coin_toss) {
         coin_toss = _coin_toss;
@@ -19,11 +20,14 @@ contract Pool {
         onlyCoinTossContract
     {
         require(_prize <= address(this).balance);
-        (bool sent, bytes memory data) = _winner.call{value: _prize}("");
-        require(sent, "Transaction was not successfull");
+
+        emit Paid(_winner, _prize);
+        _winner.transfer(_prize);
     }
 
-    fallback() external payable {}
+    fallback() external payable {
+        emit Received(msg.sender, msg.value);
+    }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
