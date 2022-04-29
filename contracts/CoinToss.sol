@@ -49,7 +49,7 @@ contract CoinToss is VRFConsumerBase {
         _;
     }
 
-    modifier stopInEmergency { if (!stopped) _; }
+    modifier stopInEmergency() { if (!stopped) _; }
 
     function toggleContractActive() public onlyOwner {
         stopped = !stopped;
