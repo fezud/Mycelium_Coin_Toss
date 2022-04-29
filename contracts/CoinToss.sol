@@ -91,11 +91,10 @@ contract CoinToss is VRFConsumerBase {
         emit Result(result, guess_value, bid, current_player, block.timestamp);
     }
 
-    function receivePrize() external {
+    function applyForPrize() external {
 
         require(state == STATE.CLOSED);
         require(current_player == msg.sender, "You haven't played");
-        require(result == guess_value, "You've lost");
 
         address payable _current_player = current_player;
         uint256 _prize = prize;
@@ -105,8 +104,9 @@ contract CoinToss is VRFConsumerBase {
         current_player = payable(address(0));
         state = STATE.OPEN;
 
-
-        emit Won(_current_player, _prize);
-        pool.payWinner(_current_player, _prize);
+        if (result == guess_value) {
+            emit Won(_current_player, _prize);
+            pool.payWinner(_current_player, _prize);
+        }
     }
 }
